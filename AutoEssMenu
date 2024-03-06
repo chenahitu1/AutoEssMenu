@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        #textArea {
+            height: 300px;
+            width: 600px;
+            margin-top: 50px;
+        }
+
+        button.copyButton {
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .file-upload {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="richTextEditor">
+        <textarea id="textArea"></textarea>
+    </div>
+    <div><button class="copyButton" onclick="copyToClipboard()">点击复制</button></div>
+
+    <div class="file-upload">
+        <input type="file" id="fileInput" accept=".xls, .xlsx">
+        <button onclick="handleFile()">点击上传</button>
+    </div>
+
+    <script>
+        function handleFile() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                var data = e.target.result;
+                var workbook = XLSX.read(data, { type: 'binary' });
+                var sheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[sheetName];
+
+                var headerRow = 2; // 第二行是标题行
+                var columnName = "工号"; // 要检索的列名
+
+                var headers = Object.keys(worksheet).filter(key => key.includes(headerRow));
+                console.log(headers)
+                var columnKeys = headers.filter(key => worksheet[key].v === columnName);
+                console.log(columnKeys);
+                if (columnKeys.length > 0) {
+                    var columnValues = [];
+                    columnKeys.forEach(columnKey => {
+                        var values = Object.keys(worksheet)
+                            .filter(key => key.includes(columnKey[0]))
+                            .map(key => worksheet[key].v)
+                            .slice(1);
+                        columnValues.push(...values);
+                    });
+                    console.log(columnValues)
+
+                    var textArea = document.getElementById('textArea');
+                    // textArea.value = columnValues.join('\n');
+                    for (var i = 0; i < columnValues.length; i++) {
+                        var workId = columnValues[i];
+                        var text = "[User]\nuid=" + workId + "\nrole=pcd:portal_content/com.CHIMEI.CHEMEI_XSS/com.CHIMEI.TW01/com.CHIMEI.Role/chimei.com.ZJ_GA_ROLE;pcd:portal_content/com.CHIMEI.CHEMEI_XSS/com.CHIMEI.TW01/com.CHIMEI.Role/LSO;pcd:portal_content/com.CHIMEI.CHEMEI_XSS/com.CHIMEI.TW01/com.CHIMEI.Role/Role_User1;pcd:portal_content/com.sap.pct/every_user/com.sap.pct.erp.ess.bp_folder/com.sap.pct.erp.ess.roles/com.sap.pct.erp.ess.employee_self_service";
+                        textArea.value += text.replace('uid=213393', 'uid=' + workId)+"\n"+"\n";
+                    }
+                } else {
+                    alert("未找到包含值为'工号'的列");
+                }
+            };
+
+            reader.readAsBinaryString(file);
+        }
+
+        function copyToClipboard() {
+            var textArea = document.getElementById('textArea');
+            textArea.select();
+            document.execCommand('copy');
+            alert('文本已复制');
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</body>
+
+</html>
